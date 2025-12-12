@@ -142,12 +142,12 @@ class MyTrainer:
 		precision, recall, f1, _ = precision_recall_fscore_support(labels, predictions, average='macro')
 		return {'accuracy': accuracy, 'f1_macro': f1}
 
-	def train(self, train_dataset, val_dataset, output_dir="./results_starcoder2", num_epochs=1, batch_size=8,
+	def train(self, train_dataset, val_dataset, output_dir="./results_starcoder2", num_epochs=1, batch_size=32,
 			  learning_rate=2e-4):
 		logger.info("Starting training (Native BF16)...")
 
 		training_args = TrainingArguments(
-			dataloader_num_workers=0,
+			dataloader_num_workers=2,
 
 			output_dir=output_dir,
 			num_train_epochs=num_epochs,
@@ -159,7 +159,7 @@ class MyTrainer:
 
 			warmup_steps=100,
 			weight_decay=0.01,
-			logging_steps=10,
+			logging_steps=50,
 
 			eval_strategy="steps",
 			eval_steps=200,
@@ -199,7 +199,7 @@ class MyTrainer:
 		self.tokenizer.save_pretrained(output_dir)
 		return trainer
 
-	def run_full_pipeline(self, output_dir="./results_starcoder2", num_epochs=1, batch_size=16, learning_rate=2e-4):
+	def run_full_pipeline(self, output_dir="./results_starcoder2", num_epochs=1, batch_size=32, learning_rate=2e-4):
 		try:
 			train_df, val_df = self.load_and_prepare_data()
 			self.initialize_model_and_tokenizer()
@@ -224,7 +224,7 @@ def main():
 	parser.add_argument('--task', default='A')
 	parser.add_argument('--output_dir', default='./results_starcoder2_3b')
 	parser.add_argument('--epochs', type=int, default=1)
-	parser.add_argument('--batch_size', type=int, default=16)
+	parser.add_argument('--batch_size', type=int, default=32)
 
 	parser.add_argument('--lr', type=float, default=2e-4)
 	parser.add_argument('--max_length', type=int, default=512)
