@@ -139,7 +139,7 @@ class CodeBERTTrainer:
 			weight_decay=0.01,
 			logging_dir='./logs',
 			logging_steps=100,
-			evaluation_strategy="steps",
+			eval_strategy="steps",
 			eval_steps=500,
 			save_strategy="steps",
 			save_steps=500,
