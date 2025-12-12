@@ -149,6 +149,8 @@ class QwenTrainer:
 		logger.info("Starting training (Native BF16)...")
 
 		training_args = TrainingArguments(
+			dataloader_num_workers=0,
+
 			output_dir=output_dir,
 			num_train_epochs=num_epochs,
 
