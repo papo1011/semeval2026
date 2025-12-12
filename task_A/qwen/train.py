@@ -81,7 +81,7 @@ class QwenTrainer:
 			num_labels=self.num_labels,
 			device_map="auto",
 			trust_remote_code=True,
-			torch_dtype=torch.bfloat16,
+			dtype=torch.bfloat16,
 			attn_implementation="sdpa"  # Use native PyTorch SDPA
 		)
 
