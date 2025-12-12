@@ -3,7 +3,7 @@
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=<ADDYOUREMAIL>
 #SBATCH --partition=gpu_a40           # choose between gpu_a40, gpu_a40_ext, gpu_a100, cpu_sapphire, cpu_sapphire_ext
-#SBATCH --gres=gpu:4
+#SBATCH --gres=gpu:1
 #SBATCH --time=0-23:59:00             # Max time
 #SBATCH --cpus-per-task=32            # CPUs per task
 #SBATCH --mem=256G                    # Memory required per node
@@ -17,6 +17,4 @@ eval "$(conda shell.bash hook)"
 # before running this script, make sure you have created the conda environment
 conda activate semeval_env
 
-export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
-
-torchrun --nproc_per_node=4 train.py
+python train.py
