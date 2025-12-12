@@ -2,8 +2,9 @@
 #SBATCH --job-name=semeval
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=<ADDYOUREMAIL>
-#SBATCH --partition=gpu_a100          # choose between gpu_a40, gpu_a40_ext, gpu_a100, cpu_sapphire, cpu_sapphire_ext
-#SBATCH --time=2-00:00:00             # Max time
+#SBATCH --partition=gpu_a40           # choose between gpu_a40, gpu_a40_ext, gpu_a100, cpu_sapphire, cpu_sapphire_ext
+#SBATCH --gres=gpu:1
+#SBATCH --time=0-23:00:00             # Max time
 #SBATCH --cpus-per-task=8             # CPUs per task
 #SBATCH --mem=64G                     # Memory required per node
 
