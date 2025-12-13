@@ -1,10 +1,10 @@
 import argparse
 import logging
+import os
 import warnings
 
 import pandas as pd
 import torch
-from datasets import load_dataset
 from peft import PeftModel, PeftConfig
 from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
@@ -51,12 +51,13 @@ class MyInference:
 		self.model.to(self.device)
 		self.model.eval()
 
-	def load_test_data(self, task_subset):
-		logger.info(f"Loading test dataset subset {task_subset}...")
-		dataset = load_dataset("DaniilOr/SemEval-2026-Task13", task_subset)
-		test_df = dataset['test']
+	def load_test_data(self):
+		logger.info(f"Loading test dataset ...")
+		current_dir = os.path.dirname(os.path.abspath(__file__))
+		test_path = os.path.join(current_dir, "test.parquet")
 
-		return test_df.to_pandas()
+		df = pd.read_parquet(test_path)
+		return df
 
 	def predict(self, df, batch_size):
 		logger.info("Starting inference...")
@@ -85,7 +86,7 @@ class MyInference:
 
 	def run(self, task_subset='A', batch_size=32, output_file="submission.csv"):
 		self.load_model()
-		test_df = self.load_test_data(task_subset)
+		test_df = self.load_test_data()
 		predictions = self.predict(test_df, batch_size)
 
 		submission = pd.DataFrame({
@@ -100,7 +101,6 @@ class MyInference:
 def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--model_dir', type=str, required=True, help="Path to checkpoint folder")
-	parser.add_argument('--task', default='A', help="Dataset subset")
 	parser.add_argument('--output_file', default='submission.csv')
 	parser.add_argument('--batch_size', type=int, default=32)
 	parser.add_argument('--max_length', type=int, default=512)
@@ -113,7 +113,6 @@ def main():
 	)
 
 	inference.run(
-		task_subset=args.task,
 		batch_size=args.batch_size,
 		output_file=args.output_file
 	)
