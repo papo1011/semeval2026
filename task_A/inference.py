@@ -53,18 +53,10 @@ class MyInference:
 
 	def load_test_data(self, task_subset):
 		logger.info(f"Loading test dataset subset {task_subset}...")
-		dataset = load_dataset("DaniilOr/SemEval-2026-Task13", task_subset, split="test")
+		dataset = load_dataset("DaniilOr/SemEval-2026-Task13", task_subset)
+		test_df = dataset['test']
 
-		df = dataset.to_pandas()
-
-		# Ensure ID column exists
-		if 'id' in df.columns:
-			df['ID'] = df['id']
-		elif 'ID' not in df.columns:
-			logger.warning("No ID column found. Using index.")
-			df['ID'] = df.index
-
-		return df
+		return test_df.to_pandas()
 
 	def predict(self, df, batch_size):
 		logger.info("Starting inference...")
@@ -98,7 +90,7 @@ class MyInference:
 
 		submission = pd.DataFrame({
 			'ID': test_df['ID'],
-			'prediction': predictions
+			'label': predictions
 		})
 
 		submission.to_csv(output_file, index=False)
