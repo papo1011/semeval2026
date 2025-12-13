@@ -41,7 +41,7 @@ class MyInference:
 			num_labels=2,
 			device_map=None,
 			trust_remote_code=True,
-			torch_dtype=torch.bfloat16,
+			dtype=torch.bfloat16,
 			attn_implementation="sdpa"
 		)
 		base_model.config.pad_token_id = self.tokenizer.pad_token_id
