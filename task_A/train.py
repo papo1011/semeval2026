@@ -93,9 +93,9 @@ class MyTrainer:
 		# Target all linear layers for maximum performance on code tasks
 		peft_config = LoraConfig(
 			task_type=TaskType.SEQ_CLS,
-			r=64,
-			lora_alpha=128,
-			lora_dropout=0.05,
+			r=8,
+			lora_alpha=16,
+			lora_dropout=0.2,
 			target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
 			bias="none"
 		)
