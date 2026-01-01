@@ -227,8 +227,11 @@ class MyTrainer:
         trainer.train()
 
         logx(">>> Saving model...")
-        trainer.save_model(output_dir)
+        self.model.save_pretrained(output_dir)
         self.tokenizer.save_pretrained(output_dir)
+
+        print(f">>> Saving model...")
+        print(f">>> Saved to: {output_dir}")
         logx(f">>> Saved to: {output_dir}")
 
     def run_full_pipeline(self, output_dir, num_epochs=1, batch_size=1, learning_rate=5e-5):
