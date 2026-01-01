@@ -90,7 +90,7 @@ class MyTrainer:
             self.model_name,
             num_labels=self.num_labels,
             trust_remote_code=True,
-            dtype=torch.float16
+            dtype=torch.float32
         )
 
         self.model.config.pad_token_id = self.tokenizer.pad_token_id
