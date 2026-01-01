@@ -187,6 +187,8 @@ class MyTrainer:
             weight_decay=0.01,
             logging_steps=5,
 
+            max_grad_norm=1.0,
+
             **{eval_key: "steps"},
             eval_steps=20,
             save_strategy="steps",
@@ -229,7 +231,7 @@ class MyTrainer:
         self.tokenizer.save_pretrained(output_dir)
         logx(f">>> Saved to: {output_dir}")
 
-    def run_full_pipeline(self, output_dir, num_epochs=1, batch_size=1, learning_rate=2e-4):
+    def run_full_pipeline(self, output_dir, num_epochs=1, batch_size=1, learning_rate=5e-5):
         logx(">>> STEP 1: Load data")
         train_df, val_df = self.load_and_prepare_data()
         logx(f">>> STEP 1 DONE: train={len(train_df)} val={len(val_df)}")
