@@ -8,6 +8,7 @@ import torch
 from peft import PeftModel, PeftConfig
 from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from datasets import load_dataset
 
 warnings.filterwarnings("ignore")
 logging.basicConfig(level=logging.INFO)
@@ -41,7 +42,7 @@ class MyInference:
             num_labels=4,
             device_map=None,
             trust_remote_code=True,
-            dtype=torch.bfloat16,
+            dtype=torch.float16,
             attn_implementation="sdpa"
         )
         base_model.config.pad_token_id = self.tokenizer.pad_token_id
@@ -52,23 +53,23 @@ class MyInference:
         self.model.eval()
 
     def load_test_data(self):
-        logger.info("Loading test dataset (local parquet)...")
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        test_path = os.path.join(current_dir, "test.parquet")
-        df = pd.read_parquet(test_path)
+        logger.info("Loading official test split from HuggingFace...")
+        dataset = load_dataset("DaniilOr/SemEval-2026-Task13", "C")
 
-        if "code" not in df.columns:
-            raise ValueError(f"test.parquet must contain 'code' column. Found: {df.columns.tolist()}")
+        # The official test should have an ID column
+        test_df = dataset["test"].to_pandas()
 
-        # Spec expects id,label. Some bundles may use ID.
-        if "id" in df.columns:
+        if "id" in test_df.columns:
             id_col = "id"
-        elif "ID" in df.columns:
+        elif "ID" in test_df.columns:
             id_col = "ID"
         else:
-            raise ValueError(f"test.parquet must contain 'id' or 'ID' column. Found: {df.columns.tolist()}")
+            raise ValueError(f"Official test split has no id column. Found: {test_df.columns.tolist()}")
 
-        return df, id_col
+        if "code" not in test_df.columns:
+            raise ValueError(f"Official test split has no code column. Found: {test_df.columns.tolist()}")
+
+        return test_df, id_col
 
     def predict(self, df, batch_size):
         logger.info(f"Starting inference on {len(df)} samples...")
