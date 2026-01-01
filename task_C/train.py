@@ -1,8 +1,8 @@
 import argparse
-import logging
 import os
 import warnings
 import inspect
+import sys
 
 import numpy as np
 import torch
@@ -18,8 +18,11 @@ from transformers import (
 )
 
 warnings.filterwarnings("ignore")
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+
+
+def logx(msg: str):
+    print(msg, flush=True)
+    sys.stdout.flush()
 
 
 def pick_eval_key():
@@ -28,24 +31,26 @@ def pick_eval_key():
 
 
 class MyTrainer:
-    def __init__(self, task_subset='C', max_length=512, model_name="bigcode/starcoder2-3b"):
-        # map "C" -> "task_c"
+    def __init__(self, task_subset="C", max_length=128, model_name="bigcode/starcoder2-3b", smoke=True):
         self.task_subset = task_subset
         self.max_length = max_length
         self.model_name = model_name
+        self.smoke = smoke
+
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.tokenizer = None
         self.model = None
         self.num_labels = None
 
     def load_and_prepare_data(self):
-        logger.info(f"Loading dataset subset {self.task_subset} ...")
+        logx(f">>> Loading dataset subset: {self.task_subset}")
         dataset = load_dataset("DaniilOr/SemEval-2026-Task13", self.task_subset)
 
         train_data = dataset["train"]
         val_data = dataset["validation"]
 
-        logger.info(f"Official Training samples: {len(train_data)}")
-        logger.info(f"Official Validation samples: {len(val_data)}")
+        logx(f">>> Official train size: {len(train_data)}")
+        logx(f">>> Official validation size: {len(val_data)}")
 
         train_df = train_data.to_pandas()
         val_df = val_data.to_pandas()
@@ -60,26 +65,32 @@ class MyTrainer:
         train_df = clean_df(train_df, "Train")
         val_df = clean_df(val_df, "Validation")
 
+        # SMOKE MODE: tiny subset to verify the pipeline quickly on Colab
+        if self.smoke:
+            train_df = train_df.sample(200, random_state=42)
+            val_df = val_df.sample(50, random_state=42)
+            logx(f">>> SMOKE ENABLED: train={len(train_df)} val={len(val_df)}")
+
         self.num_labels = int(train_df["label"].nunique())
-        if self.task_subset == "task_c" and self.num_labels != 4:
+        if str(self.task_subset).upper() == "C" and self.num_labels != 4:
             raise ValueError(f"Task C must have 4 labels, got {self.num_labels}")
 
         return train_df, val_df
 
     def initialize_model_and_tokenizer(self):
-        logger.info(f"Initializing model: {self.model_name}")
+        logx(f">>> Initializing model: {self.model_name}")
+        logx(f">>> Using device: {self.device}")
 
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, trust_remote_code=True)
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
+        # T4-friendly: fp16
         self.model = AutoModelForSequenceClassification.from_pretrained(
             self.model_name,
             num_labels=self.num_labels,
-            device_map="auto",
             trust_remote_code=True,
-            dtype=torch.bfloat16,
-            attn_implementation="sdpa",
+            dtype=torch.float16
         )
 
         self.model.config.pad_token_id = self.tokenizer.pad_token_id
@@ -94,23 +105,31 @@ class MyTrainer:
             target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
             bias="none"
         )
+
         self.model = get_peft_model(self.model, peft_config)
         self.model.print_trainable_parameters()
 
+        self.model.to(self.device)
+        logx(">>> Model is ready on the selected device.")
+
     def tokenize_function(self, examples):
-        
+        # padding=True is faster than padding="max_length" for smoke / quick runs
         return self.tokenizer(
             examples["code"],
             truncation=True,
-            padding="max_length",
+            padding=True,
             max_length=self.max_length,
         )
 
     def prepare_datasets(self, train_df, val_df):
+        logx(">>> Building Hugging Face datasets...")
         train_dataset = Dataset.from_pandas(train_df[["code", "label"]])
         val_dataset = Dataset.from_pandas(val_df[["code", "label"]])
 
+        logx(">>> Tokenizing train split...")
         train_dataset = train_dataset.map(self.tokenize_function, batched=True, remove_columns=["code"])
+
+        logx(">>> Tokenizing validation split...")
         val_dataset = val_dataset.map(self.tokenize_function, batched=True, remove_columns=["code"])
 
         train_dataset = train_dataset.rename_column("label", "labels")
@@ -118,6 +137,7 @@ class MyTrainer:
 
         train_dataset.set_format("torch")
         val_dataset.set_format("torch")
+        logx(">>> Tokenization completed.")
         return train_dataset, val_dataset
 
     def compute_metrics(self, eval_pred):
@@ -130,8 +150,8 @@ class MyTrainer:
         _, _, f1, _ = precision_recall_fscore_support(labels, preds, average="macro")
         return {"accuracy": acc, "f1_macro": f1}
 
-    def train(self, train_dataset, val_dataset, output_dir, num_epochs=1, batch_size=2, learning_rate=2e-4):
-        logger.info("Starting training...")
+    def train(self, train_dataset, val_dataset, output_dir, num_epochs=1, batch_size=1, learning_rate=2e-4):
+        logx(">>> Creating TrainingArguments...")
 
         eval_key = pick_eval_key()
 
@@ -140,31 +160,36 @@ class MyTrainer:
             num_train_epochs=num_epochs,
             per_device_train_batch_size=batch_size,
             per_device_eval_batch_size=batch_size,
-            gradient_accumulation_steps=4,
-            warmup_steps=100,
+
+            # T4-friendly
+            gradient_accumulation_steps=8,
+
+            warmup_steps=20,
             weight_decay=0.01,
-            logging_steps=50,
+            logging_steps=5,
 
             **{eval_key: "steps"},
-            eval_steps=200,
+            eval_steps=20,
             save_strategy="steps",
-            save_steps=200,
+            save_steps=20,
+
             load_best_model_at_end=True,
             metric_for_best_model="f1_macro",
             greater_is_better=True,
 
             learning_rate=learning_rate,
-            optim="paged_adamw_32bit",
+            optim="adamw_torch",
 
-            bf16=True,
-            fp16=False,
-            tf32=True,
+            bf16=False,
+            fp16=True,
+            tf32=False,
 
             gradient_checkpointing=True,
             report_to="none",
             save_total_limit=2,
             save_safetensors=True,
-            dataloader_num_workers=2,
+
+            dataloader_num_workers=0,
         )
 
         trainer = Trainer(
@@ -174,42 +199,62 @@ class MyTrainer:
             eval_dataset=val_dataset,
             tokenizer=self.tokenizer,
             compute_metrics=self.compute_metrics,
-            callbacks=[EarlyStoppingCallback(early_stopping_patience=5)]
+            callbacks=[EarlyStoppingCallback(early_stopping_patience=2)]
         )
 
+        logx(">>> ***** Running training *****")
         trainer.train()
+
+        logx(">>> Saving model...")
         trainer.save_model(output_dir)
         self.tokenizer.save_pretrained(output_dir)
-        return trainer
+        logx(f">>> Saved to: {output_dir}")
 
-    def run_full_pipeline(self, output_dir, num_epochs=1, batch_size=2, learning_rate=2e-4):
+    def run_full_pipeline(self, output_dir, num_epochs=1, batch_size=1, learning_rate=2e-4):
+        logx(">>> STEP 1: Load data")
         train_df, val_df = self.load_and_prepare_data()
+        logx(f">>> STEP 1 DONE: train={len(train_df)} val={len(val_df)}")
+
+        logx(">>> STEP 2: Initialize model")
         self.initialize_model_and_tokenizer()
+        logx(">>> STEP 2 DONE")
+
+        logx(">>> STEP 3: Tokenize datasets")
         train_dataset, val_dataset = self.prepare_datasets(train_df, val_df)
+        logx(">>> STEP 3 DONE")
+
+        logx(">>> STEP 4: Train")
         self.train(train_dataset, val_dataset, output_dir, num_epochs, batch_size, learning_rate)
+        logx(">>> STEP 4 DONE")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Task C Fine-tune (same style as Task A)")
+    parser = argparse.ArgumentParser(description="Task C Fine-tune (T4-safe + anti-Colab-kill logs)")
     parser.add_argument("--model_name", default="bigcode/starcoder2-3b")
     parser.add_argument("--task", default="C")
-    parser.add_argument("--output_dir", default="./results_taskc")
+    parser.add_argument("--output_dir", default="./results_taskc_smoke")
     parser.add_argument("--epochs", type=int, default=1)
-    parser.add_argument("--batch_size", type=int, default=2)
+    parser.add_argument("--batch_size", type=int, default=1)
     parser.add_argument("--lr", type=float, default=2e-4)
-    parser.add_argument("--max_length", type=int, default=512)
-    args = parser.parse_args()
+    parser.add_argument("--max_length", type=int, default=128)
+    parser.add_argument("--no_smoke", action="store_true", help="Disable smoke sampling (use full dataset)")
 
+    args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
 
-    trainer = MyTrainer(task_subset=args.task,
-                         max_length=args.max_length,
-                           model_name=args.model_name)
-    
-    trainer.run_full_pipeline(output_dir=args.output_dir,
-                               num_epochs=args.epochs,
-                                 batch_size=args.batch_size,
-                                   learning_rate=args.lr)
+    trainer = MyTrainer(
+        task_subset=args.task,
+        max_length=args.max_length,
+        model_name=args.model_name,
+        smoke=(not args.no_smoke)
+    )
+
+    trainer.run_full_pipeline(
+        output_dir=args.output_dir,
+        num_epochs=args.epochs,
+        batch_size=args.batch_size,
+        learning_rate=args.lr
+    )
 
 
 if __name__ == "__main__":
