@@ -121,23 +121,42 @@ class MyTrainer:
             max_length=self.max_length,
         )
 
+    # Instead of datasets.map(...) (which is where your Colab keeps dying),
+    # we tokenize manually and build Dataset.from_dict(...)
     def prepare_datasets(self, train_df, val_df):
-        logx(">>> Building Hugging Face datasets...")
-        train_dataset = Dataset.from_pandas(train_df[["code", "label"]])
-        val_dataset = Dataset.from_pandas(val_df[["code", "label"]])
+        logx(">>> STEP 3: Tokenizing datasets (manual, no datasets.map)")
 
-        logx(">>> Tokenizing train split...")
-        train_dataset = train_dataset.map(self.tokenize_function, batched=True, remove_columns=["code"])
+        def encode_codes(codes):
+            return self.tokenizer(
+                list(codes),
+                truncation=True,
+                padding=True,
+                max_length=self.max_length,
+            )
 
-        logx(">>> Tokenizing validation split...")
-        val_dataset = val_dataset.map(self.tokenize_function, batched=True, remove_columns=["code"])
+        # Tokenize train
+        logx(">>> Tokenizing train split (manual)...")
+        train_enc = encode_codes(train_df["code"])
+        train_dataset = Dataset.from_dict({
+            "input_ids": train_enc["input_ids"],
+            "attention_mask": train_enc["attention_mask"],
+            "labels": train_df["label"].tolist(),
+        })
 
-        train_dataset = train_dataset.rename_column("label", "labels")
-        val_dataset = val_dataset.rename_column("label", "labels")
+        # Tokenize validation
+        logx(">>> Tokenizing validation split (manual)...")
+        val_enc = encode_codes(val_df["code"])
+        val_dataset = Dataset.from_dict({
+            "input_ids": val_enc["input_ids"],
+            "attention_mask": val_enc["attention_mask"],
+            "labels": val_df["label"].tolist(),
+        })
 
+        # Torch format
         train_dataset.set_format("torch")
         val_dataset.set_format("torch")
-        logx(">>> Tokenization completed.")
+
+        logx(">>> STEP 3 DONE: Tokenization completed.")
         return train_dataset, val_dataset
 
     def compute_metrics(self, eval_pred):
