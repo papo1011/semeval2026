@@ -24,7 +24,7 @@ def load_dataset_XGB(config_name):
 
 def _tokenize(corpus):
     tokenizer = get_encoding("cl100k_base")
-    tokenized_corpus = [tokenizer.encode(text) for text in corpus]
+    tokenized_corpus = [tokenizer.encode(text, disallowed_special=()) for text in corpus]
     return tokenized_corpus
 
 def _tfidf(corpus, max_features=10000):

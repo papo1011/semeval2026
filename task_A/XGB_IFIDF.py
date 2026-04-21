@@ -15,8 +15,15 @@ def run_on_problems(df_train, df_test):
     y_train = df_train["label"].values
     y_test = df_test["label"].values
 
-    X_train, embedder = utils._tfidf(corpus=X_train["code"].values, max_features=1536)
-    X_test = embedder.transform(utils._tokenize(corpus=X_test["code"].values)).toarray()
+    print("Y train size:", y_train.shape)
+    print("Y test size:", y_test.shape)
+
+    X_train, embedder = utils._tfidf(corpus=df_train["code"].values, max_features=1536)
+    X_test = embedder.transform(utils._tokenize(corpus=df_test["code"].values)).toarray()
+
+    print("X train size:", X_train.shape)
+    print("X test size:", X_test.shape)
+
 
     train_eval(X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test)
 
