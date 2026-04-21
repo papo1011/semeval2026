@@ -33,7 +33,7 @@ def run_on_problems(df_train, df_test):
     print("Y train size:", y_train.shape)
     print("Y test size:", y_test.shape)
 
-    X_train, embedder = utils._tfidf(corpus=df_train["code"].values, max_features=10000)
+    X_train, embedder = utils._tfidf(corpus=df_train["code"].values, max_features=5000)
     X_test = embedder.transform(utils._tokenize(corpus=df_test["code"].values)).toarray()
 
     print("X train size:", X_train.shape)
