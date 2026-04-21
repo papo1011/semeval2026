@@ -32,7 +32,6 @@ def _tfidf(corpus, max_features=10000):
     vectorizer = TfidfVectorizer(
         ngram_range=(1, 3), 
         max_features=max_features,
-        device="cuda",
         token_pattern=r"(?u)\b\w\w+\b|(?<=[^\w\s])|(?=[^\w\s])"
     )
 
