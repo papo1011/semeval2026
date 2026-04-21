@@ -6,7 +6,8 @@ def train_eval(X_train, X_test, y_train, y_test):
     n_trees = 100
 
     xgb = XGBClassifier(n_estimators=n_trees, 
-                        callbacks=[TqdmCallback(n_estimators=n_trees)])
+                        callbacks=[TqdmCallback(n_estimators=n_trees)],
+                        device="cuda")
     
     xgb.fit(X_train, 
             y_train)
