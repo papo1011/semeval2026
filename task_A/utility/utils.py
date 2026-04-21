@@ -28,7 +28,7 @@ def _tokenize(corpus):
     tokenized_corpus = [tokenizer.encode(text, disallowed_special=()) for text in corpus]
     return tokenized_corpus
 
-def _tfidf(corpus, max_features=5000):
+def _tfidf(corpus, max_features=1000):
 
     gdf_corpus = cudf.Series(corpus)
 
