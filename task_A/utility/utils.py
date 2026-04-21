@@ -28,6 +28,7 @@ def _tokenize(corpus):
     return tokenized_corpus
 
 def _tfidf(corpus, max_features=10000):
+    print("uso tfidf")
     vectorizer = TfidfVectorizer(analyzer=lambda x: x, max_features=max_features)
     return vectorizer.fit_transform(_tokenize(corpus)).toarray(), vectorizer
 
