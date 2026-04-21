@@ -1,7 +1,7 @@
 from datasets import load_dataset
 from tiktoken import get_encoding
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics import accuracy_score, precision_score, recall_score, roc_auc_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, roc_auc_score, f1_score
 import pandas as pd
 import numpy as np
 import os
@@ -31,24 +31,51 @@ def _tfidf(corpus, max_features=10000):
     vectorizer = TfidfVectorizer(analyzer=lambda x: x, max_features=max_features)
     return vectorizer.fit_transform(_tokenize(corpus)).toarray(), vectorizer
 
-def save_results(y_test, y_pred, y_prob, file_name):
-    accuracy = accuracy_score(y_test, y_pred)
-    precision = precision_score(y_test, y_pred)
-    recall = recall_score(y_test, y_pred)
-    f1 = 2 * (precision * recall) / (precision + recall)
-    auc = roc_auc_score(y_test, y_prob)
-    if os.path.exists(f"Results/{file_name}.npz"):
-        results = np.load(f"Results/{file_name}.npz")
-        accuracy = np.append(results["accuracy"], accuracy)
-        precision = np.append(results["precision"], precision)
-        recall = np.append(results["recall"], recall)
-        f1 = np.append(results["f1"], f1)
-        auc = np.append(results["auc"], auc)
-    np.savez(
-        f"Results/{file_name}.npz",
-        accuracy=accuracy,
-        precision=precision,
-        recall=recall,
-        f1=f1,
-        auc=auc,
-    )
+def save_results(y_test, y_pred, y_prob, file_name, save_dir="/content/drive/MyDrive/"):
+    """
+    Salva i risultati nella Home di Google Drive. 
+    Se il file esiste già, appende i nuovi risultati a quelli precedenti.
+    """
+    
+    # 1. Calcolo delle metriche in modo pulito
+    # Usiamo f1_score di sklearn per evitare errori di divisione per zero manuali
+    current_metrics = {
+        "accuracy": accuracy_score(y_test, y_pred),
+        "precision": precision_score(y_test, y_pred),
+        "recall": recall_score(y_test, y_pred),
+        "f1": f1_score(y_test, y_pred),
+        "auc": roc_auc_score(y_test, y_prob)
+    }
+    
+    # 2. Gestione del percorso
+    # Creiamo la cartella se non esiste (anche se MyDrive esiste sempre dopo il mount)
+    if not os.path.exists(save_dir):
+        try:
+            os.makedirs(save_dir, exist_ok=True)
+        except OSError:
+            print(f"Errore: Impossibile accedere a {save_dir}. Hai montato il Drive?")
+            return
+
+    file_path = os.path.join(save_dir, f"{file_name}.npz")
+    
+    # 3. Caricamento dati esistenti e concatenazione
+    if os.path.exists(file_path):
+        try:
+            existing_data = np.load(file_path)
+            # Aggiorniamo ogni metrica nel dizionario aggiungendo il nuovo valore all'array esistente
+            for key in current_metrics:
+                if key in existing_data:
+                    current_metrics[key] = np.append(existing_data[key], current_metrics[key])
+                else:
+                    # Se per qualche motivo manca una chiave, la inizializziamo come array
+                    current_metrics[key] = np.array([current_metrics[key]])
+        except Exception as e:
+            print(f"Avviso: Errore nel caricamento del file esistente ({e}). Creazione nuovo file.")
+    else:
+        # Se il file è nuovo, trasformiamo i singoli valori in array per mantenere coerenza
+        for key in current_metrics:
+            current_metrics[key] = np.array([current_metrics[key]])
+
+    # 4. Salvataggio definitivo
+    np.savez(file_path, **current_metrics)
+    print(f"✅ Risultati aggiornati con successo in: {file_path}")
