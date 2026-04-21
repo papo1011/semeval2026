@@ -4,5 +4,4 @@ datasets
 tiktoken
 pandas
 numpy
-cudf
-cuml
+cudf-cu12 cuml-cu12 --extra-index-url=https://pypi.nvidia.com
