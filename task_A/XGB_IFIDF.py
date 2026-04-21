@@ -2,6 +2,7 @@ import utility.utils as utils
 from utility.tqdm import TqdmCallback
 from xgboost import XGBClassifier
 import numpy as np
+import cudf
 
 def train_eval(X_train, X_test, y_train, y_test):
     n_trees = 500
@@ -33,8 +34,11 @@ def run_on_problems(df_train, df_test):
     print("Y train size:", y_train.shape)
     print("Y test size:", y_test.shape)
 
+    # 1. Train transform
     X_train, embedder = utils._tfidf(corpus=df_train["code"].values, max_features=5000)
-    X_test = embedder.transform(utils._tokenize(corpus=df_test["code"].values)).toarray()
+    
+    gdf_test = cudf.Series(df_test["code"].values)
+    X_test = embedder.transform(gdf_test)
 
     print("X train size:", X_train.shape)
     print("X test size:", X_test.shape)
