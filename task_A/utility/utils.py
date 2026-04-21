@@ -39,7 +39,7 @@ def _tfidf(corpus, max_features=5000):
 
     X_tfidf_gpu = vectorizer.fit_transform(gdf_corpus)
     
-    return X_tfidf_gpu.toarray(), vectorizer
+    return X_tfidf_gpu, vectorizer
 
 def save_results(y_test, y_pred, y_prob, file_name, save_dir="/content/drive/MyDrive/"):
     """
