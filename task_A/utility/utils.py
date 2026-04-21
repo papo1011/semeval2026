@@ -1,7 +1,7 @@
 from datasets import load_dataset
 from tiktoken import get_encoding
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics import accuracy_score, precision_score, recall_score, roc_auc_score, f1_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, roc_auc_score, f1_score, confusion_matrix
 import pandas as pd
 import numpy as np
 import os
@@ -28,9 +28,13 @@ def _tokenize(corpus):
     return tokenized_corpus
 
 def _tfidf(corpus, max_features=10000):
-    print("uso tfidf")
-    vectorizer = TfidfVectorizer(analyzer=lambda x: x, max_features=max_features)
-    return vectorizer.fit_transform(_tokenize(corpus)).toarray(), vectorizer
+    vectorizer = TfidfVectorizer(
+        ngram_range=(1, 3), 
+        max_features=max_features,
+        token_pattern=r"(?u)\b\w\w+\b|(?<=[^\w\s])|(?=[^\w\s])" # Cattura anche simboli del codice
+    )
+
+    return vectorizer.fit_transform(corpus).toarray(), vectorizer
 
 def save_results(y_test, y_pred, y_prob, file_name, save_dir="/content/drive/MyDrive/"):
     """
@@ -79,4 +83,5 @@ def save_results(y_test, y_pred, y_prob, file_name, save_dir="/content/drive/MyD
 
     # 4. Salvataggio definitivo
     np.savez(file_path, **current_metrics)
-    print(f"✅ Risultati aggiornati con successo in: {file_path}")
+    print(f"Risultati aggiornati con successo in: {file_path}")
+    print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred))

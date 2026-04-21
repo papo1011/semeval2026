@@ -1,12 +1,19 @@
 import utility.utils as utils
 from utility.tqdm import TqdmCallback
 from xgboost import XGBClassifier
+import numpy as np
 
 def train_eval(X_train, X_test, y_train, y_test):
-    n_trees = 100
+    n_trees = 500
+    counter = np.bincount(y_train)
+    ratio = counter[0] / counter[1]
 
-    xgb = XGBClassifier(n_estimators=n_trees, 
+    xgb = XGBClassifier(n_estimators=n_trees,
+                        learning_rate=0.05,
+                        max_depth=6,
+                        scale_pos_weight=ratio,
                         callbacks=[TqdmCallback(n_estimators=n_trees)],
+                        tree_method="hist",
                         device="cuda")
     
     xgb.fit(X_train, 
@@ -26,7 +33,7 @@ def run_on_problems(df_train, df_test):
     print("Y train size:", y_train.shape)
     print("Y test size:", y_test.shape)
 
-    X_train, embedder = utils._tfidf(corpus=df_train["code"].values, max_features=1536)
+    X_train, embedder = utils._tfidf(corpus=df_train["code"].values, max_features=10000)
     X_test = embedder.transform(utils._tokenize(corpus=df_test["code"].values)).toarray()
 
     print("X train size:", X_train.shape)
