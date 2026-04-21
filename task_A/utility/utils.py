@@ -1,10 +1,9 @@
 from datasets import load_dataset
 from tiktoken import get_encoding
-from cuml.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import accuracy_score, precision_score, recall_score, roc_auc_score, f1_score, confusion_matrix
 import pandas as pd
 import numpy as np
-import cudf
 import os
 
 def load_dataset_XGB(config_name):
@@ -29,16 +28,15 @@ def _tokenize(corpus):
     return tokenized_corpus
 
 def _tfidf(corpus, max_features=10000):
-    df_gpu = cudf.Series(corpus)
 
     vectorizer = TfidfVectorizer(
         ngram_range=(1, 3), 
         max_features=max_features,
-        token_pattern=r"(?u)\b\w\w+\b|(?<=[^\w\s])|(?=[^\w\s])" # Cattura anche simboli del codice
+        device="cuda",
+        token_pattern=r"(?u)\b\w\w+\b|(?<=[^\w\s])|(?=[^\w\s])"
     )
 
-    x = vectorizer.fit_transform(df_gpu).toarray()
-    return x, vectorizer
+    return vectorizer.fit_transform(corpus).toarray(), vectorizer
 
 def save_results(y_test, y_pred, y_prob, file_name, save_dir="/content/drive/MyDrive/"):
     """
