@@ -1,6 +1,7 @@
 from datasets import load_dataset
 from tiktoken import get_encoding
-from sklearn.feature_extraction.text import TfidfVectorizer
+import cudf
+from cuml.feature_extraction.text import TfidfVectorizer as GPU_TfidfVectorizer
 from sklearn.metrics import accuracy_score, precision_score, recall_score, roc_auc_score, f1_score, confusion_matrix
 import pandas as pd
 import numpy as np
@@ -29,13 +30,16 @@ def _tokenize(corpus):
 
 def _tfidf(corpus, max_features=10000):
 
-    vectorizer = TfidfVectorizer(
+    gdf_corpus = cudf.Series(corpus)
+
+    vectorizer = GPU_TfidfVectorizer(
         ngram_range=(1, 3), 
         max_features=max_features,
-        token_pattern=r"(?u)\b\w\w+\b|(?<=[^\w\s])|(?=[^\w\s])"
     )
 
-    return vectorizer.fit_transform(corpus).toarray(), vectorizer
+    X_tfidf_gpu = vectorizer.fit_transform(gdf_corpus)
+    
+    return X_tfidf_gpu.toarray(), vectorizer
 
 def save_results(y_test, y_pred, y_prob, file_name, save_dir="/content/drive/MyDrive/"):
     """
