@@ -5,8 +5,12 @@ from xgboost import XGBClassifier
 def train_eval(X_train, X_test, y_train, y_test):
     n_trees = 100
 
-    xgb = XGBClassifier(n_estimators=n_trees)
-    xgb.fit(X_train, y_train, callbacks=[TqdmCallback(n_estimators=n_trees)])
+    xgb = XGBClassifier(n_estimators=n_trees, 
+                        callbacks=[TqdmCallback(n_estimators=n_trees)])
+    
+    xgb.fit(X_train, 
+            y_train)
+    
     y_pred = xgb.predict(X_test)
     y_prob = xgb.predict_proba(X_test)[:, 1]
     utils.save_results(
