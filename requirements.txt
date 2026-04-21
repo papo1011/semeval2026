@@ -4,3 +4,5 @@ datasets
 tiktoken
 pandas
 numpy
+cudf
+cuml
