@@ -34,6 +34,9 @@ def train_eval(X_train, X_val, X_test, y_train, y_val, y_test):
     
     xgb.fit(X_train, 
             y_train,
+            eval_set=[(X_val, y_val)],
+            verbose=100,
+            early_stopping_rounds=100,
             )
     
      #  Probabilità su validation (per threshold tuning)
@@ -42,6 +45,7 @@ def train_eval(X_train, X_val, X_test, y_train, y_val, y_test):
 
     print(f"Best threshold (val): {thr:.3f}")
     print(f"Best validation F1: {best_f1:.4f}")
+    
 
      #  Debug distribuzione (super utile)
     print("Val prob mean:", y_val_prob.mean())
@@ -67,11 +71,8 @@ def run_on_problems(df_train, df_test, df_val):
     # 1. Train transform
     X_train, embedder = utils._tfidf(corpus=df_train["code"].values, max_features=500)
     
-    gdf_val = cudf.Series(df_val["code"].values)
-    X_val = embedder.transform(gdf_val).get()
-
-    gdf_test = cudf.Series(df_test["code"].values)
-    X_test = embedder.transform(gdf_test).get()
+    X_val = embedder.transform(df_val["code"].values)
+    X_test = embedder.transform(df_test["code"].values)
 
     print("Y train size:", y_train.shape)
     print("Y test size:", y_test.shape)
