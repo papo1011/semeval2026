@@ -26,7 +26,6 @@ def train_eval(X_train, X_val, X_test, y_train, y_val, y_test):
                         colsample_bytree=0.8,
                         reg_alpha=1e-3,
                         reg_lambda=1.0,
-                        max_depth=6,
                         callbacks=[TqdmCallback(n_estimators=n_trees)],
                         tree_method="hist",
                         device="cuda",
