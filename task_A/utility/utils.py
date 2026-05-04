@@ -33,8 +33,8 @@ def _tfidf(corpus, max_features=50000):
     gdf_corpus = cudf.Series(corpus)
 
     vectorizer = GPU_TfidfVectorizer(
-        analyzer="char_wb",
-        ngram_range=(3, 5),
+        analyzer="char",
+        ngram_range=(3, 6),
         max_features=max_features,
         sublinear_tf=True,
         min_df=2,

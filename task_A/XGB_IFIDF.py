@@ -14,20 +14,19 @@ def best_threshold(y_true, y_prob):
     return thresholds[best_idx], scores[best_idx]
 
 def train_eval(X_train, X_val, X_test, y_train, y_val, y_test):
-    n_trees = 4000
+    n_trees = 3000
     counter = np.bincount(y_train)
     ratio = counter[0] / counter[1]
 
     xgb = XGBClassifier(n_estimators=n_trees,
                         learning_rate=0.03,
-                        max_depth=8,
+                        max_depth=6,
                         min_child_weight=5,
                         subsample=0.8,
                         colsample_bytree=0.8,
                         reg_alpha=1e-3,
                         reg_lambda=1.0,
                         max_depth=6,
-                        scale_pos_weight=ratio,
                         callbacks=[TqdmCallback(n_estimators=n_trees)],
                         tree_method="hist",
                         device="cuda",
@@ -40,14 +39,17 @@ def train_eval(X_train, X_val, X_test, y_train, y_val, y_test):
             verbose=100,
             early_stopping_rounds=100,)
     
-     # ✅ Probabilità su validation (per threshold tuning)
+     #  Probabilità su validation (per threshold tuning)
     y_val_prob = xgb.predict_proba(X_val)[:, 1]
     thr, best_f1 = best_threshold(y_val, y_val_prob)
 
     print(f"Best threshold (val): {thr:.3f}")
     print(f"Best validation F1: {best_f1:.4f}")
 
-    # ✅ Probabilità su test
+     #  Debug distribuzione (super utile)
+    print("Val prob mean:", y_val_prob.mean())
+
+    #  Probabilità su test
     y_test_prob = xgb.predict_proba(X_test)[:, 1]
     y_test_pred = (y_test_prob >= thr).astype(int)
 
@@ -64,16 +66,19 @@ def run_on_problems(df_train, df_test, df_val):
     y_test = df_test["label"].values
     y_val = df_val["label"].values
 
-    print("Y train size:", y_train.shape)
-    print("Y test size:", y_test.shape)
-    print("Y val size:", y_val.shape)
 
     # 1. Train transform
-    X_train, embedder = utils._tfidf(corpus=df_train["code"].values, max_features=10000)
+    X_train, embedder = utils._tfidf(corpus=df_train["code"].values, max_features=50000)
     
+    gdf_val = cudf.Series(df_val["code"].values)
+    X_val = embedder.transform(gdf_val).get()
+
     gdf_test = cudf.Series(df_test["code"].values)
     X_test = embedder.transform(gdf_test).get()
 
+    print("Y train size:", y_train.shape)
+    print("Y test size:", y_test.shape)
+    print("Y val size:", y_val.shape)
 
 
     train_eval(X_train=X_train,X_val=X_val, X_test=X_test, y_train=y_train, y_val=y_val, y_test=y_test)
