@@ -2,7 +2,7 @@ import utility.utils as utils
 from utility.tqdm import TqdmCallback
 from xgboost import XGBClassifier
 import numpy as np
-import cudf
+#import cudf
 
 def best_threshold(y_true, y_prob):
     thresholds = np.linspace(0.1, 0.9, 81)
