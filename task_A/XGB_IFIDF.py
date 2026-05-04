@@ -14,7 +14,7 @@ def best_threshold(y_true, y_prob):
     return thresholds[best_idx], scores[best_idx]
 
 def train_eval(X_train, X_val, X_test, y_train, y_val, y_test):
-    n_trees = 3000
+    n_trees = 500
     counter = np.bincount(y_train)
     ratio = counter[0] / counter[1]
 
