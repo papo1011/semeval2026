@@ -28,16 +28,13 @@ def _tokenize(corpus):
     tokenized_corpus = [tokenizer.encode(text, disallowed_special=()) for text in corpus]
     return tokenized_corpus
 
-def _tfidf(corpus, max_features=500):
+def _tfidf(corpus, max_features=1000):
 
     gdf_corpus = cudf.Series(corpus)
 
     vectorizer = GPU_TfidfVectorizer(
-        analyzer="char",
-        ngram_range=(3, 4),
+        ngram_range=(1, 3), 
         max_features=max_features,
-        sublinear_tf=True,
-        min_df=5,
     )
 
     X_tfidf_gpu = vectorizer.fit_transform(gdf_corpus)
