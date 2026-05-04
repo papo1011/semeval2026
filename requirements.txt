@@ -1,0 +1,8 @@
+scikit-learn
+xgboost
+datasets
+tiktoken
+pandas
+numpy
+cudf-cu12
+cuml-cu12 --extra-index-url https://pypi.nvidia.com
