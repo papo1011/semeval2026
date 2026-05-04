@@ -34,7 +34,7 @@ def _tfidf(corpus, max_features=1000):
 
     vectorizer = GPU_TfidfVectorizer(
         analyzer="char",
-        ngram_range=(3, 4),
+        ngram_range=(1, 3),
         max_features=max_features,
         sublinear_tf=True,
         min_df=2,
