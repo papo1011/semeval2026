@@ -1,7 +1,7 @@
 from datasets import load_dataset
 from tiktoken import get_encoding
 #import cudf
-from cuml.feature_extraction.text import TfidfVectorizer as GPU_TfidfVectorizer
+#from cuml.feature_extraction.text import TfidfVectorizer as GPU_TfidfVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import accuracy_score, precision_score, recall_score, roc_auc_score, f1_score, confusion_matrix
 import pandas as pd
