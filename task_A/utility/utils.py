@@ -2,47 +2,34 @@ from datasets import load_dataset
 from tiktoken import get_encoding
 import cudf
 from cuml.feature_extraction.text import TfidfVectorizer as GPU_TfidfVectorizer
-#from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import accuracy_score, precision_score, recall_score, roc_auc_score, f1_score, confusion_matrix
 import pandas as pd
 import numpy as np
 import os
-
 def load_dataset_XGB(config_name):
     print("Loading Dataset")
     dataset = load_dataset("DaniilOr/SemEval-2026-Task13", config_name)
-
     df_train = dataset["train"].to_pandas().reset_index(drop=True)
     df_val = dataset["validation"].to_pandas().reset_index(drop=True)
     df_test = dataset["test"].to_pandas().reset_index(drop=True)
-
     print(df_train.shape)
-
     print(f"Train set size: {len(df_train)}")
     print(f"Validation set size: {len(df_val)}")
     print(f"Test set size: {len(df_test)}")
-
     return df_train, df_val, df_test
-
 def _tokenize(corpus):
     tokenizer = get_encoding("cl100k_base")
     tokenized_corpus = [tokenizer.encode(text, disallowed_special=()) for text in corpus]
     return tokenized_corpus
-
 def _tfidf(corpus, max_features=1000):
     gdf_corpus = cudf.Series(corpus)
     vectorizer = GPU_TfidfVectorizer(
-        analyzer="char_w",
-        ngram_range=(3, 5),
+        ngram_range=(1, 3), 
         max_features=max_features,
-        min_df=5,
-        sublinear_tf=True
     )
-
-    X = vectorizer.fit_transform(gdf_corpus)
-
-    return X.get(), vectorizer
-
+    X_tfidf_gpu = vectorizer.fit_transform(gdf_corpus)
+    
+    return X_tfidf_gpu.get(), vectorizer
 def save_results(y_test, y_pred, y_prob, file_name, save_dir="/content/drive/MyDrive/"):
     """
     Salva i risultati nella Home di Google Drive. 
@@ -67,7 +54,6 @@ def save_results(y_test, y_pred, y_prob, file_name, save_dir="/content/drive/MyD
         except OSError:
             print(f"Errore: Impossibile accedere a {save_dir}. Hai montato il Drive?")
             return
-
     file_path = os.path.join(save_dir, f"{file_name}.npz")
     
     # 3. Caricamento dati esistenti e concatenazione
@@ -87,7 +73,6 @@ def save_results(y_test, y_pred, y_prob, file_name, save_dir="/content/drive/MyD
         # Se il file è nuovo, trasformiamo i singoli valori in array per mantenere coerenza
         for key in current_metrics:
             current_metrics[key] = np.array([current_metrics[key]])
-
     # 4. Salvataggio definitivo
     np.savez(file_path, **current_metrics)
     print(f"Risultati aggiornati con successo in: {file_path}")
