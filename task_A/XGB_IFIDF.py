@@ -1,6 +1,6 @@
 import utility.utils as utils
 from utility.tqdm import TqdmCallback
-from xgboost import XGBClassifier
+from xgboost import XGBClassifier, EarlyStopping
 import numpy as np
 import cudf
 
@@ -30,7 +30,7 @@ def train_eval(X_train, X_test,X_val, y_train, y_test, y_val):
             y_train,
             eval_set=[(X_val, y_val)],
             verbose=100,
-            early_stopping_rounds=100)
+            callbacks=[EarlyStopping(rounds=100, save_best=True)])
     
      #  Probabilità su validation (per threshold tuning)
     y_val_prob = xgb.predict_proba(X_val)[:, 1]
