@@ -1,3 +1,4 @@
+
 from datasets import load_dataset
 from tiktoken import get_encoding
 import cudf
@@ -21,22 +22,15 @@ def _tokenize(corpus):
     tokenizer = get_encoding("cl100k_base")
     tokenized_corpus = [tokenizer.encode(text, disallowed_special=()) for text in corpus]
     return tokenized_corpus
-
-def _tfidf(corpus, max_features=2000):
-
+def _tfidf(corpus, max_features=1000):
     gdf_corpus = cudf.Series(corpus)
-
     vectorizer = GPU_TfidfVectorizer(
-        analyzer="char_wb",          #  fondamentale
-        ngram_range=(3, 4),       
+        ngram_range=(3, 4), 
         max_features=max_features,
-        min_df=5                #  taglia rumore
     )
-
     X_tfidf_gpu = vectorizer.fit_transform(gdf_corpus)
-
+    
     return X_tfidf_gpu.get(), vectorizer
-
 def save_results(y_test, y_pred, y_prob, file_name, save_dir="/content/drive/MyDrive/"):
     """
     Salva i risultati nella Home di Google Drive. 
