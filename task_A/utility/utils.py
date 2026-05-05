@@ -27,10 +27,10 @@ def _tfidf(corpus, max_features=2000):
     gdf_corpus = cudf.Series(corpus)
 
     vectorizer = GPU_TfidfVectorizer(
-        analyzer="char",          #  fondamentale
+        analyzer="char_wb",          #  fondamentale
         ngram_range=(3, 4),       
         max_features=max_features,
-        min_df=10                 #  taglia rumore
+        min_df=5                #  taglia rumore
     )
 
     X_tfidf_gpu = vectorizer.fit_transform(gdf_corpus)
