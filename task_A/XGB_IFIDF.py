@@ -11,7 +11,7 @@ def best_threshold(y_true, y_prob):
 
     for thr in thresholds:
         y_pred = (y_prob >= thr).astype(int)
-        f1 = f1_score(y_true, y_pred)
+        f1 = utils.f1_score(y_true, y_pred)
         if f1 > best_f1:
             best_f1 = f1
             best_thr = thr
