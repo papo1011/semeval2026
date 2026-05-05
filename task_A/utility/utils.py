@@ -7,6 +7,7 @@ from sklearn.feature_extraction.text import HashingVectorizer
 #from sklearn.metrics import accuracy_score, precision_score, recall_score, roc_auc_score, f1_score, confusion_matrix
 import pandas as pd
 import numpy as np
+import gc
 import os
 def load_dataset_XGB(config_name):
     print("Loading Dataset")
@@ -38,8 +39,11 @@ def _tfidf(corpus, max_features=4000):
     X = vectorizer.fit_transform(corpus)
 
     print("TF-IDF done.")
+    del df_train
+    gc.collect()
 
     return X, vectorizer
+    
 def save_results(y_test, y_pred, y_prob, file_name, save_dir="/content/drive/MyDrive/"):
     """
     Salva i risultati nella Home di Google Drive. 

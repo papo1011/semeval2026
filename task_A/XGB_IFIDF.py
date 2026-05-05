@@ -3,6 +3,7 @@ from utility.tqdm import TqdmCallback
 from xgboost.callback import EarlyStopping
 from xgboost import XGBClassifier
 import numpy as np
+import gc
 #import cudf
 
 def best_threshold(y_true, y_prob):
@@ -60,12 +61,17 @@ def run_on_problems(df_train, df_test, df_val):
     X_train, embedder = utils._tfidf(corpus=df_train["code"].values, max_features=8000)
     
 
-    X_test = embedder.transform(df_test["code"].values)
+    
     X_val = embedder.transform(df_val["code"].values)
+    del X_val
+    gc.collect()
+    X_test = embedder.transform(df_test["code"].values)
+    
 
     print("X train size:", X_train.shape)
     print("X test size:", X_test.shape)
     print("X val size:", X_val.shape)
+    
 
     train_eval(X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test, X_val=X_val, y_val=y_val)
 
