@@ -31,9 +31,7 @@ def _tfidf(corpus, max_features=20000):
     vectorizer = HashingVectorizer(
         analyzer="char",
         ngram_range=(3, 5),
-        max_features=max_features,
-        min_df=5,
-        sublinear_tf=True
+        n_features=max_features
     )
 
     X = vectorizer.fit_transform(corpus)
