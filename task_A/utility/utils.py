@@ -1,6 +1,6 @@
 from datasets import load_dataset
 from tiktoken import get_encoding
-import cudf
+#import cudf
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_extraction.text import HashingVectorizer
 #from cuml.feature_extraction.text import TfidfVectorizer as GPU_TfidfVectorizer
