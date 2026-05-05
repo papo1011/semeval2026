@@ -15,23 +15,22 @@ def best_threshold(y_true, y_prob):
     return thresholds[best_idx], scores[best_idx]
 
 def train_eval(X_train, X_test,X_val, y_train, y_test, y_val):
-    n_trees = 500
-    counter = np.bincount(y_train)
-    ratio = counter[0] / counter[1]
-    xgb = XGBClassifier(n_estimators=n_trees,
-                        learning_rate=0.05,
-                        max_depth=6,
-                        callbacks=[TqdmCallback(n_estimators=n_trees)],
-                        tree_method="hist",
-                        device="cpu",
-                        eval_metric="auc")
-    
-    xgb.fit(X_train, 
-            y_train,
-            eval_set=[(X_val, y_val)],
-            early_stopping_rounds=100,
-            verbose=100
-            )
+    xgb = XGBClassifier(
+        n_estimators=500,
+        learning_rate=0.05,
+        max_depth=6,
+        tree_method="hist",
+        device="cpu",
+        eval_metric="auc",
+        callbacks=[EarlyStopping(rounds=100)]
+    )
+
+    xgb.fit(
+        X_train,
+        y_train,
+        eval_set=[(X_val, y_val)],
+        verbose=100
+    )
     
      #  Probabilità su validation (per threshold tuning)
     y_val_prob = xgb.predict_proba(X_val)[:, 1]
