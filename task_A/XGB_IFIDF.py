@@ -13,7 +13,7 @@ def best_threshold(y_true, y_prob):
     best_idx = int(np.argmax(scores))
     return thresholds[best_idx], scores[best_idx]
 
-def train_eval(X_train, X_test, y_train, y_test):
+def train_eval(X_train, X_test,X_val, y_train, y_test, y_val):
     n_trees = 500
     counter = np.bincount(y_train)
     ratio = counter[0] / counter[1]
