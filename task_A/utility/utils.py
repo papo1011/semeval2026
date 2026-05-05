@@ -24,14 +24,15 @@ def _tokenize(corpus):
     tokenized_corpus = [tokenizer.encode(text, disallowed_special=()) for text in corpus]
     return tokenized_corpus
 
-def _tfidf(corpus, max_features=20000):
+def _tfidf(corpus, max_features=8000):
 
     print("TF-IDF (CPU) start...")
 
     vectorizer = HashingVectorizer(
         analyzer="char",
-        ngram_range=(3, 5),
+        ngram_range=(3, 4),
         n_features=max_features
+        dtype=np.float32
     )
 
     X = vectorizer.fit_transform(corpus)
