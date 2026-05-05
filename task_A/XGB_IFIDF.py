@@ -69,7 +69,7 @@ def run_on_problems(df_train, df_test, df_val):
 
 
     # 1. Train transform
-    X_train, embedder = utils._tfidf(corpus=df_train["code"].values, max_features=500)
+    X_train, embedder = utils._tfidf(corpus=df_train["code"].values, max_features=1000)
     
     X_val = embedder.transform(df_val["code"].values)
     X_test = embedder.transform(df_test["code"].values)

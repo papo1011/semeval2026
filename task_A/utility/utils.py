@@ -30,7 +30,7 @@ def _tokenize(corpus):
     return tokenized_corpus
 
 def _tfidf(corpus, max_features=1000):
-
+    gdf_corpus = cudf.Series(corpus)
     vectorizer = GPU_TfidfVectorizer(
         analyzer="char_w",
         ngram_range=(3, 5),
@@ -39,9 +39,9 @@ def _tfidf(corpus, max_features=1000):
         sublinear_tf=True
     )
 
-    X = vectorizer.fit_transform(corpus)
+    X = vectorizer.fit_transform(gdf_corpus)
 
-    return X, vectorizer
+    return X.get(), vectorizer
 
 def save_results(y_test, y_pred, y_prob, file_name, save_dir="/content/drive/MyDrive/"):
     """
