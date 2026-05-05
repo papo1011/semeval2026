@@ -79,4 +79,9 @@ def save_results(y_test, y_pred, y_prob, file_name, save_dir="/content/drive/MyD
     # 4. Salvataggio definitivo
     np.savez(file_path, **current_metrics)
     print(f"Risultati aggiornati con successo in: {file_path}")
-    print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
+    print(f"Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
+    print(f"accuracy: {current_metrics['accuracy'][-1]}")
+    print(f"precision: {current_metrics['precision'][-1]}")
+    print(f"recall: {current_metrics['recall'][-1]}")
+    print(f"f1: {current_metrics['f1'][-1]}")
+
