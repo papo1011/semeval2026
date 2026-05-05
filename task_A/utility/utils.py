@@ -31,7 +31,7 @@ def _tfidf(corpus, max_features=8000):
     vectorizer = HashingVectorizer(
         analyzer="char",
         ngram_range=(3, 4),
-        n_features=max_features
+        n_features=max_features,
         dtype=np.float32
     )
 
