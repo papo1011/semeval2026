@@ -25,8 +25,10 @@ def _tokenize(corpus):
 def _tfidf(corpus, max_features=4000):
     gdf_corpus = cudf.Series(corpus)
     vectorizer = GPU_TfidfVectorizer(
-        ngram_range=(3, 4), 
+        ngram_range=(3, 5),
+        min_df=3,
         max_features=max_features,
+        sublinear_tf=True,
     )
     X_tfidf_gpu = vectorizer.fit_transform(gdf_corpus)
     
