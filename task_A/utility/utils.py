@@ -22,7 +22,7 @@ def _tokenize(corpus):
     tokenizer = get_encoding("cl100k_base")
     tokenized_corpus = [tokenizer.encode(text, disallowed_special=()) for text in corpus]
     return tokenized_corpus
-def _tfidf(corpus, max_features=1000):
+def _tfidf(corpus, max_features=4000):
     gdf_corpus = cudf.Series(corpus)
     vectorizer = GPU_TfidfVectorizer(
         ngram_range=(3, 4), 
