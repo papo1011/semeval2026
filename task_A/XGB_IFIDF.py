@@ -29,9 +29,7 @@ def train_eval(X_train, X_test,X_val, y_train, y_test, y_val):
     
     xgb.fit(X_train, 
             y_train,
-            eval_set=[(X_val, y_val)],
-            verbose=100,
-            callbacks=[EarlyStopping(rounds=100, save_best=True)])
+            )
     
      #  Probabilità su validation (per threshold tuning)
     y_val_prob = xgb.predict_proba(X_val)[:, 1]
