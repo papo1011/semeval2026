@@ -1,13 +1,10 @@
 from datasets import load_dataset
 from tiktoken import get_encoding
-#import cudf
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.feature_extraction.text import HashingVectorizer
-#from cuml.feature_extraction.text import TfidfVectorizer as GPU_TfidfVectorizer
-#from sklearn.metrics import accuracy_score, precision_score, recall_score, roc_auc_score, f1_score, confusion_matrix
+import cudf
+from cuml.feature_extraction.text import TfidfVectorizer as GPU_TfidfVectorizer
+from sklearn.metrics import accuracy_score, precision_score, recall_score, roc_auc_score, f1_score, confusion_matrix
 import pandas as pd
 import numpy as np
-import gc
 import os
 def load_dataset_XGB(config_name):
     print("Loading Dataset")
@@ -25,25 +22,21 @@ def _tokenize(corpus):
     tokenized_corpus = [tokenizer.encode(text, disallowed_special=()) for text in corpus]
     return tokenized_corpus
 
-def _tfidf(corpus, max_features=4000):
+def _tfidf(corpus, max_features=5000):
 
-    print("TF-IDF (CPU) start...")
+    gdf_corpus = cudf.Series(corpus)
 
-    vectorizer = HashingVectorizer(
-        analyzer="char",
-        ngram_range=(3, 4),
-        n_features=max_features,
-        dtype=np.float32
+    vectorizer = GPU_TfidfVectorizer(
+        analyzer="char",          #  fondamentale
+        ngram_range=(3, 4),       
+        max_features=max_features,
+        min_df=10                 #  taglia rumore
     )
 
-    X = vectorizer.fit_transform(corpus)
+    X_tfidf_gpu = vectorizer.fit_transform(gdf_corpus)
 
-    print("TF-IDF done.")
-    del df_train
-    gc.collect()
+    return X_tfidf_gpu.get(), vectorizer
 
-    return X, vectorizer
-    
 def save_results(y_test, y_pred, y_prob, file_name, save_dir="/content/drive/MyDrive/"):
     """
     Salva i risultati nella Home di Google Drive. 

@@ -1,80 +1,43 @@
 import utility.utils as utils
 from utility.tqdm import TqdmCallback
-from xgboost.callback import EarlyStopping
 from xgboost import XGBClassifier
 import numpy as np
-import gc
-#import cudf
-
-def best_threshold(y_true, y_prob):
-    thresholds = np.linspace(0.1, 0.9, 81)
-    scores = []
-    for thr in thresholds:
-        y_pred = (y_prob >= thr).astype(int)
-        scores.append(utils.f1_score(y_true, y_pred))
-    best_idx = int(np.argmax(scores))
-    return thresholds[best_idx], scores[best_idx]
-
-def train_eval(X_train, X_test,X_val, y_train, y_test, y_val):
-    xgb = XGBClassifier(
-        n_estimators=200,
-        learning_rate=0.1,
-        max_depth=4,
-        subsample=0.8,
-        colsample_bytree=0.5,
-        tree_method="hist",
-        device="cpu",
-        eval_metric="auc",
-        callbacks=[EarlyStopping(rounds=30)]
-    )
-
-    xgb.fit(
-        X_train,
-        y_train,
-        eval_set=[(X_val, y_val)],
-        verbose=100
-    )
+import cudf
+def train_eval(X_train, X_test, y_train, y_test):
+    n_trees = 500
+    counter = np.bincount(y_train)
+    ratio = counter[0] / counter[1]
+    xgb = XGBClassifier(n_estimators=n_trees,
+                        learning_rate=0.05,
+                        max_depth=6,
+                        callbacks=[TqdmCallback(n_estimators=n_trees)],
+                        tree_method="hist",
+                        device="cuda")
     
-     #  Probabilità su validation (per threshold tuning)
-    y_val_prob = xgb.predict_proba(X_val)[:, 1]
-    thr, best_f1 = best_threshold(y_val, y_val_prob)
-    print(f"Best threshold (val): {thr:.3f}")
-    print(f"Best validation F1: {best_f1:.4f}")
+    xgb.fit(X_train, 
+            y_train)
     
-     #  Debug distribuzione (super utile)
-    print("Val prob mean:", y_val_prob.mean())
-
-    #Probabilità su test    
+    
     y_prob = xgb.predict_proba(X_test)[:, 1]
-    y_pred = (y_prob >= thr).astype(int)
+    y_pred = (y_prob >= 0.4).astype(int)
     utils.save_results(
-        y_test=y_test, y_pred=y_pred, y_prob=y_prob, file_name="XGB_TFIDF"
-    )
-def run_on_problems(df_train, df_test, df_val):
+            y_test=y_test, y_pred=y_pred, y_prob=y_prob, file_name="XGB_TFIDF")
+def run_on_problems(df_train, df_test):
     y_train = df_train["label"].values
     y_test = df_test["label"].values
-    y_val = df_val["label"].values
     print("Y train size:", y_train.shape)
     print("Y test size:", y_test.shape)
-    print("Y val size:", y_val.shape)
     # 1. Train transform
-    X_train, embedder = utils._tfidf(corpus=df_train["code"].values, max_features=8000)
+    X_train, embedder = utils._tfidf(corpus=df_train["code"].values, max_features=4000)
     
-
-    
-    X_val = embedder.transform(df_val["code"].values)
-    del X_val
-    gc.collect()
-    X_test = embedder.transform(df_test["code"].values)
-    
-
+    gdf_test = cudf.Series(df_test["code"].values)
+    X_test = embedder.transform(gdf_test).get()
     print("X train size:", X_train.shape)
     print("X test size:", X_test.shape)
-    print("X val size:", X_val.shape)
-    
 
-    train_eval(X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test, X_val=X_val, y_val=y_val)
+    train_eval(X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test)
 
 def run():
-    df_train, df_val, df_test = utils.load_dataset_XGB("A")
-    run_on_problems(df_train=df_train, df_test=df_test, df_val=df_val)
+    df_train, _, df_test = utils.load_dataset_XGB("A")
+    run_on_problems(df_train=df_train, df_test=df_test)
+
