@@ -23,7 +23,7 @@ def train_eval(X_train, X_test,X_val, y_train, y_test, y_val):
                         max_depth=6,
                         callbacks=[TqdmCallback(n_estimators=n_trees)],
                         tree_method="hist",
-                        device="cuda",
+                        device="cpu",
                         eval_metric="auc")
     
     xgb.fit(X_train, 
