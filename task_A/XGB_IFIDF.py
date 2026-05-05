@@ -21,7 +21,6 @@ def train_eval(X_train, X_test,X_val, y_train, y_test, y_val):
     xgb = XGBClassifier(n_estimators=n_trees,
                         learning_rate=0.05,
                         max_depth=6,
-                        scale_pos_weight=ratio,
                         callbacks=[TqdmCallback(n_estimators=n_trees)],
                         tree_method="hist",
                         device="cuda",
@@ -41,8 +40,8 @@ def train_eval(X_train, X_test,X_val, y_train, y_test, y_val):
     print("Val prob mean:", y_val_prob.mean())
 
     #Probabilità su test    
-    y_pred = xgb.predict(X_test)
     y_prob = xgb.predict_proba(X_test)[:, 1]
+    y_pred = (y_prob >= thr).astype(int)
     utils.save_results(
         y_test=y_test, y_pred=y_pred, y_prob=y_prob, file_name="XGB_TFIDF"
     )
