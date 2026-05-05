@@ -16,13 +16,15 @@ def best_threshold(y_true, y_prob):
 
 def train_eval(X_train, X_test,X_val, y_train, y_test, y_val):
     xgb = XGBClassifier(
-        n_estimators=500,
-        learning_rate=0.05,
-        max_depth=6,
+        n_estimators=200,
+        learning_rate=0.1,
+        max_depth=4,
+        subsample=0.8,
+        colsample_bytree=0.5,
         tree_method="hist",
         device="cpu",
         eval_metric="auc",
-        callbacks=[EarlyStopping(rounds=100)]
+        callbacks=[EarlyStopping(rounds=30)]
     )
 
     xgb.fit(

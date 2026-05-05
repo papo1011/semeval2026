@@ -24,7 +24,7 @@ def _tokenize(corpus):
     tokenized_corpus = [tokenizer.encode(text, disallowed_special=()) for text in corpus]
     return tokenized_corpus
 
-def _tfidf(corpus, max_features=8000):
+def _tfidf(corpus, max_features=4000):
 
     print("TF-IDF (CPU) start...")
 
