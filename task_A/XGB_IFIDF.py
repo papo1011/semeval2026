@@ -5,19 +5,6 @@ from xgboost import XGBClassifier
 import numpy as np
 import cudf
 
-def best_threshold(y_true, y_prob):
-    thresholds = np.linspace(0.2, 0.7, 50)
-    best_thr = 0.5
-    best_f1 = 0
-
-    for thr in thresholds:
-        y_pred = (y_prob >= thr).astype(int)
-        f1 = utils.f1_score(y_true, y_pred)
-        if f1 > best_f1:
-            best_f1 = f1
-            best_thr = thr
-
-    return best_thr
 
 def train_eval(X_train, X_test,X_val, y_train, y_test, y_val):
     n_trees = 5000
@@ -31,13 +18,11 @@ def train_eval(X_train, X_test,X_val, y_train, y_test, y_val):
                         device="cuda")
     
     xgb.fit(X_train, 
-            y_train,
-            eval_set=[(X_val, y_val)],
-            verbose=0)
+            y_train)
     
     
     y_prob = xgb.predict_proba(X_test)[:, 1]
-    y_pred = (y_prob >= 0.42).astype(int)
+    y_pred = (y_prob >= 0.4).astype(int)
 
     utils.save_results(
             y_test=y_test, y_pred=y_pred, y_prob=y_prob, file_name="XGB_TFIDF")
