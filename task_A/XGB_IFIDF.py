@@ -32,11 +32,13 @@ def train_eval(X_train, X_test,X_val, y_train, y_test, y_val):
     
     xgb.fit(X_train, 
             y_train,
-            eval_set=[(X_val, y_val)])
+            eval_set=[(X_val, y_val)],
+            verbose=0)
     
     
     y_prob = xgb.predict_proba(X_test)[:, 1]
     best_threshold_val = best_threshold(y_val, xgb.predict_proba(X_val)[:, 1])
+    print(f"Best threshold found: {best_threshold_val}")  # <-- aggiungi questa riga
     y_pred = (y_prob >= best_threshold_val).astype(int)
 
     utils.save_results(
