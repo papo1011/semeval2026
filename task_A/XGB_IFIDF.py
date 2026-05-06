@@ -49,9 +49,13 @@ def run_on_problems(df_train, df_val, df_test):
     # 1. Train transform
     X_train, embedder = utils._tfidf(corpus=df_train["code"].values, max_features=4000)
     
+    gdf_val = cudf.Series(df_val["code"].values)
+    X_val = embedder.transform(gdf_val).get()
+    
     gdf_test = cudf.Series(df_test["code"].values)
     X_test = embedder.transform(gdf_test).get()
     print("X train size:", X_train.shape)
+    print("X val size:", X_val.shape)
     print("X test size:", X_test.shape)
 
     train_eval(X_train=X_train, X_test=X_test, X_val=X_val, y_train=y_train, y_test=y_test, y_val=y_val)
