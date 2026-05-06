@@ -4,7 +4,7 @@ from xgboost import XGBClassifier
 import numpy as np
 import cudf
 def train_eval(X_train, X_test, y_train, y_test):
-    n_trees = 500
+    n_trees = 800
     counter = np.bincount(y_train)
     ratio = counter[0] / counter[1]
     xgb = XGBClassifier(n_estimators=n_trees,
@@ -15,8 +15,7 @@ def train_eval(X_train, X_test, y_train, y_test):
                         device="cuda")
     
     xgb.fit(X_train, 
-            y_train,
-            epoch=10)
+            y_train)
     
     
     y_prob = xgb.predict_proba(X_test)[:, 1]
