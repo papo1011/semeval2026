@@ -26,8 +26,7 @@ def train_eval(X_train, X_test,X_val, y_train, y_test, y_val):
     xgb = XGBClassifier(n_estimators=n_trees,
                         learning_rate=0.05,
                         max_depth=6,
-                        callbacks=[TqdmCallback(n_estimators=n_trees)],
-                        callbacks=[EarlyStopping(rounds=100)],
+                        callbacks=[TqdmCallback(n_estimators=n_trees), EarlyStopping(rounds=100)],
                         tree_method="hist",
                         device="cuda")
     
@@ -58,7 +57,7 @@ def run_on_problems(df_train, df_test, df_val):
     
     gdf_test = cudf.Series(df_test["code"].values)
     X_test = embedder.transform(gdf_test).get()
-    
+
     print("X train size:", X_train.shape)
     print("X test size:", X_test.shape)
 
