@@ -32,9 +32,10 @@ def train_eval(X_train, X_test, X_val, y_train, y_test, y_val):
     
     xgb.fit(X_train, 
             y_train)
-    y_prob = xgb.predict_proba(X_val)[:, 1]
-    thr = best_threshold(y_val, y_prob)
+    val_prob = xgb.predict_proba(X_val)[:, 1]
+    thr = best_threshold(y_val, val_prob)
 
+    y_prob = xgb.predict_proba(X_test)[:, 1]
     y_pred = (y_prob >= thr).astype(int)
     
     utils.save_results(
