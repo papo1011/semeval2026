@@ -1,6 +1,6 @@
 import utility.utils as utils
 from utility.tqdm import TqdmCallback
-from xgboost import EarlyStopping
+from xgboost.callback import EarlyStopping
 from xgboost import XGBClassifier
 import numpy as np
 import cudf
