@@ -22,10 +22,10 @@ def _tokenize(corpus):
     tokenizer = get_encoding("cl100k_base")
     tokenized_corpus = [tokenizer.encode(text, disallowed_special=()) for text in corpus]
     return tokenized_corpus
-def _tfidf(corpus, max_features=4000):
+def _tfidf(corpus, max_features=1000):
     gdf_corpus = cudf.Series(corpus)
     vectorizer = GPU_TfidfVectorizer(
-        ngram_range=(3, 4),
+        ngram_range=(3, 4), 
         max_features=max_features,
     )
     X_tfidf_gpu = vectorizer.fit_transform(gdf_corpus)
@@ -77,9 +77,4 @@ def save_results(y_test, y_pred, y_prob, file_name, save_dir="/content/drive/MyD
     # 4. Salvataggio definitivo
     np.savez(file_path, **current_metrics)
     print(f"Risultati aggiornati con successo in: {file_path}")
-    print(f"Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
-    print(f"accuracy: {current_metrics['accuracy'][-1]}")
-    print(f"precision: {current_metrics['precision'][-1]}")
-    print(f"recall: {current_metrics['recall'][-1]}")
-    print(f"f1: {current_metrics['f1'][-1]}")
-
+    print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
