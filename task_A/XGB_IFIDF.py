@@ -20,7 +20,6 @@ def train_eval(X_train, X_test, y_train, y_test):
     
     y_prob = xgb.predict_proba(X_test)[:, 1]
     y_pred = (y_prob >= 0.4).astype(int)
-    
     utils.save_results(
             y_test=y_test, y_pred=y_pred, y_prob=y_prob, file_name="XGB_TFIDF")
 def run_on_problems(df_train, df_test):
@@ -29,7 +28,7 @@ def run_on_problems(df_train, df_test):
     print("Y train size:", y_train.shape)
     print("Y test size:", y_test.shape)
     # 1. Train transform
-    X_train, embedder = utils._tfidf(corpus=df_train["code"].values, max_features=4000)
+    X_train, embedder = utils._tfidf(corpus=df_train["code"].values, max_features=2000)
     
     gdf_test = cudf.Series(df_test["code"].values)
     X_test = embedder.transform(gdf_test).get()
@@ -41,6 +40,4 @@ def run_on_problems(df_train, df_test):
 def run():
     df_train, _, df_test = utils.load_dataset_XGB("A")
     run_on_problems(df_train=df_train, df_test=df_test)
-
-
 
