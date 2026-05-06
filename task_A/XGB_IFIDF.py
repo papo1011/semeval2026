@@ -20,7 +20,7 @@ def best_threshold(y_true, y_prob):
     return best_thr
 
 def train_eval(X_train, X_test,X_val, y_train, y_test, y_val):
-    n_trees = 1000
+    n_trees = 5000
     counter = np.bincount(y_train)
     ratio = counter[0] / counter[1]
     xgb = XGBClassifier(n_estimators=n_trees,
@@ -37,9 +37,7 @@ def train_eval(X_train, X_test,X_val, y_train, y_test, y_val):
     
     
     y_prob = xgb.predict_proba(X_test)[:, 1]
-    best_threshold_val = best_threshold(y_val, xgb.predict_proba(X_val)[:, 1])
-    print(f"Best threshold found: {best_threshold_val}")  # <-- aggiungi questa riga
-    y_pred = (y_prob >= best_threshold_val).astype(int)
+    y_pred = (y_prob >= 0.42).astype(int)
 
     utils.save_results(
             y_test=y_test, y_pred=y_pred, y_prob=y_prob, file_name="XGB_TFIDF")
