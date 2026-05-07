@@ -4,7 +4,7 @@ from xgboost import XGBClassifier
 import numpy as np
 import cudf
 def train_eval(X_train, X_test, y_train, y_test):
-    n_trees = 6000
+    n_trees = 5500
     counter = np.bincount(y_train)
     ratio = counter[0] / counter[1]
     xgb = XGBClassifier(n_estimators=n_trees,
