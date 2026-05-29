@@ -5,13 +5,14 @@ import json
 from tqdm import tqdm
 from pathlib import Path
 from datetime import datetime
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader, TensorDataset, WeightedRandomSampler
 from sklearn.metrics import classification_report, accuracy_score, f1_score
 
 from task_A.src.dataset import TaskA_Dataset
 from task_A.src.model import (
     UniXcoderSupCon,
     LinearClassifier,
+    MLPClassifier,
     UniXcoderSupConClassifier,
 )
 from utils.logger import setup_global_logger
@@ -33,6 +34,7 @@ def extract_features(loader, encoder, device, use_amp, desc="Extracting"):
 
             with torch.amp.autocast(enabled=use_amp, device_type=str(device)):
                 features = encoder(input_ids, attention_mask)
+                # features = encoder(input_ids, attention_mask, return_base_features=True)
 
             all_features.append(features.cpu())
             all_labels.append(labels.cpu())
@@ -93,7 +95,8 @@ def train_stage2(args):
     raw_train_loader = DataLoader(
         train_dataset,
         batch_size=args.batch_size,
-        shuffle=True,
+        # shuffle=True,
+        shuffle=False,
         num_workers=args.num_workers,
         pin_memory=args.pin_memory,
     )
@@ -122,9 +125,25 @@ def train_stage2(args):
     logger.info("UniXcoder offloaded from VRAM. Caching complete.")
 
     # Create new, ultra-fast DataLoaders that only serve 128-D vectors
+    logger.info("Applying WeightedRandomSampler to balance Stage 2 classes...")
+
+    # # train_lbl is already a tensor of all labels in the dataset
+    # class_counts = torch.bincount(train_lbl)
+    # class_weights = 1.0 / class_counts.float()
+    # sample_weights = class_weights[train_lbl]
+
+    # sampler = WeightedRandomSampler(
+    #     weights=sample_weights, num_samples=len(sample_weights), replacement=True
+    # )
+
+    # Create new, ultra-fast DataLoaders that only serve 128-D vectors
     fast_train_loader = DataLoader(
-        TensorDataset(train_feat, train_lbl), batch_size=512, shuffle=True
+        TensorDataset(train_feat, train_lbl),
+        batch_size=512,
+        # sampler=sampler,
+        shuffle=True,
     )
+
     fast_val_loader = DataLoader(
         TensorDataset(val_feat, val_lbl), batch_size=512, shuffle=False
     )
@@ -132,8 +151,34 @@ def train_stage2(args):
     # Initialize the Classifier
     logger.info("Initializing Model: Linear Classification Head")
     classifier = LinearClassifier(input_dim=128, num_classes=2).to(device)
-    criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.AdamW(classifier.parameters(), lr=args.lr)
+    # classifier = LinearClassifier(input_dim=768, num_classes=2).to(device)
+    # classifier = MLPClassifier(input_dim=128, num_classes=2).to(device)
+    # optimizer = torch.optim.AdamW(classifier.parameters(), lr=args.lr)
+    optimizer = torch.optim.AdamW(
+        classifier.parameters(), lr=args.lr, weight_decay=0.05
+    )
+
+    # ---------------------------------------------------------
+    # DYNAMIC CLASS WEIGHTING
+    # ---------------------------------------------------------
+    logger.info("Calculating dynamic class weights to prevent majority collapse...")
+    class_counts = torch.bincount(train_lbl)
+
+    # Standard inverse frequency weighting: (Total / (Num_Classes * Class_Count))
+    # This automatically assigns a massive penalty weight to the minority class
+    class_weights = len(train_lbl) / (len(class_counts) * class_counts.float())
+    class_weights = class_weights.to(device)
+
+    logger.info(
+        f"Class Weights applied: Human(0): {class_weights[0]:.4f} | Machine(1): {class_weights[1]:.4f}"
+    )
+
+    criterion = nn.CrossEntropyLoss(
+        weight=class_weights,
+        label_smoothing=0.1,  # Prevents overconfidence
+    )
+    # ---------------------------------------------------------
+
     # AMP Scaler for the linear layer
     scaler = torch.amp.GradScaler(enabled=args.use_amp)
 
@@ -143,6 +188,7 @@ def train_stage2(args):
     ckpt_manager = CheckpointManager(
         save_dir=args.save_dir,
         run_id="Classifier_Stage2",
+        # run_id="MLPClassifier_Stage2",
         keep_top_k=3,
         mode="max",  # We want the HIGHEST accuracy
         logger=logger,
@@ -247,6 +293,7 @@ def train_stage2(args):
     model_manger = CheckpointManager(
         save_dir=args.save_dir,
         run_id="UniXcoderSupConClassifier",
+        # run_id="UniXcoderSupCon_MLPClassifier",
         keep_top_k=1,
         mode="max",
         logger=logger,

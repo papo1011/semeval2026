@@ -3,7 +3,7 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from pathlib import Path
-from transformers import get_cosine_schedule_with_warmup
+from transformers import get_cosine_schedule_with_warmup, AutoTokenizer
 
 from task_A.src.dataset import TaskA_Dataset
 from task_A.src.model import UniXcoderSupCon
@@ -81,6 +81,13 @@ def train_stage1(args):
         optimizer, num_warmup_steps=warmup_steps, num_training_steps=total_steps
     )
 
+    # Load tokenizer to get correct MASK and PAD token IDs
+    logger.info("Loading tokenizer for Syntax Masking...")
+    tokenizer = AutoTokenizer.from_pretrained(args.model_name)
+
+    # 15% of tokens will be masked for the SupCon augmentation
+    masking_prob = 0.50
+
     # Training Loop
     for epoch in range(args.epochs):
         model.train()
@@ -98,28 +105,51 @@ def train_stage1(args):
             attention_mask = batch["attention_mask"].to(device)
             labels = batch["labels"].to(device)
 
+            prob_matrix = torch.full(input_ids.shape, masking_prob).to(device)
+
+            # Do NOT mask the padding tokens!
+            prob_matrix.masked_fill_(input_ids == tokenizer.pad_token_id, 0.0)
+
+            mask_indices = torch.bernoulli(prob_matrix).bool()
+
+            # Replace the chosen tokens with the official [MASK] token
+            input_ids[mask_indices] = tokenizer.mask_token_id
+
+            optimizer.zero_grad(set_to_none=True)
+
             # AUTOCAST (Dynamically enabled/disabled based on CLI flag)
             with torch.amp.autocast(enabled=args.use_amp, device_type=str(device)):
                 features = model(input_ids, attention_mask)
                 loss = criterion(features, labels)
-                loss = loss / args.accumulation_steps
+                # loss = loss / args.accumulation_steps
 
             # Backward pass via scaler (handles both AMP and standard FP32 safely)
             scaler.scale(loss).backward()
 
-            if (step + 1) % args.accumulation_steps == 0:
-                scaler.unscale_(optimizer)
-                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            # if (step + 1) % args.accumulation_steps == 0:
+            #     scaler.unscale_(optimizer)
+            #     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
 
-                scaler.step(optimizer)
-                scheduler.step()
-                scaler.update()
-                optimizer.zero_grad()
+            #     scaler.step(optimizer)
+            #     scheduler.step()
+            #     scaler.update()
+            #     optimizer.zero_grad()
 
-            total_loss += loss.item() * args.accumulation_steps
-            progress_bar.set_postfix(
-                {"Loss": f"{loss.item() * args.accumulation_steps:.4f}"}
-            )
+            # total_loss += loss.item() * args.accumulation_steps
+            # progress_bar.set_postfix(
+            #     {"Loss": f"{loss.item() * args.accumulation_steps:.4f}"}
+            # )
+
+            scaler.unscale_(optimizer)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+
+            scaler.step(optimizer)
+            scheduler.step()
+            scaler.update()
+            optimizer.zero_grad()
+
+            total_loss += loss.item()
+            progress_bar.set_postfix({"Loss": f"{loss.item():.4f}"})
 
         avg_loss = total_loss / len(train_loader)
         logger.info(
