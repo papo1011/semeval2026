@@ -20,6 +20,7 @@ def train_eval(X_train, X_test, y_train, y_test):
     
     y_prob = xgb.predict_proba(X_test)[:, 1]
     y_pred = (y_prob >= 0.4).astype(int)
+    print("F1 Score:", utils.f1_score(y_test, y_pred))
     utils.save_results(
             y_test=y_test, y_pred=y_pred, y_prob=y_prob, file_name="XGB_TFIDF")
 def run_on_problems(df_train, df_test):

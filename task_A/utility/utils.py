@@ -7,6 +7,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, roc_a
 import pandas as pd
 import numpy as np
 import os
+
 def load_dataset_XGB(config_name):
     print("Loading Dataset")
     dataset = load_dataset("DaniilOr/SemEval-2026-Task13", config_name)
@@ -18,10 +19,12 @@ def load_dataset_XGB(config_name):
     print(f"Validation set size: {len(df_val)}")
     print(f"Test set size: {len(df_test)}")
     return df_train, df_val, df_test
+
 def _tokenize(corpus):
     tokenizer = get_encoding("cl100k_base")
     tokenized_corpus = [tokenizer.encode(text, disallowed_special=()) for text in corpus]
     return tokenized_corpus
+
 def _tfidf(corpus, max_features=1000):
     gdf_corpus = cudf.Series(corpus)
     vectorizer = GPU_TfidfVectorizer(
@@ -31,6 +34,7 @@ def _tfidf(corpus, max_features=1000):
     X_tfidf_gpu = vectorizer.fit_transform(gdf_corpus)
     
     return X_tfidf_gpu.get(), vectorizer
+
 def save_results(y_test, y_pred, y_prob, file_name, save_dir="/content/drive/MyDrive/"):
     """
     Salva i risultati nella Home di Google Drive. 
@@ -82,3 +86,17 @@ def save_results(y_test, y_pred, y_prob, file_name, save_dir="/content/drive/MyD
     print("precision:", current_metrics["precision"][-1])
     print("recall:", current_metrics["recall"][-1])
     print("f1:", current_metrics["f1"][-1])
+
+def f1_score(y_true, y_pred):
+    tp = np.sum((y_true == 1) & (y_pred == 1))
+    fp = np.sum((y_true == 0) & (y_pred == 1))
+    fn = np.sum((y_true == 1) & (y_pred == 0))
+    
+    precision = tp / (tp + fp) if (tp + fp) > 0 else 0
+    recall = tp / (tp + fn) if (tp + fn) > 0 else 0
+    
+    if precision + recall == 0:
+        return 0.0
+    
+    f1 = 2 * (precision * recall) / (precision + recall)
+    return f1
