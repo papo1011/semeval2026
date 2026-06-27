@@ -1,0 +1,34 @@
+\begin{thebibliography}{6}
+\providecommand{\natexlab}[1]{#1}
+
+\bibitem[{Bao et~al.(2024)Bao, Zhao, Teng, Yang, and Zhang}]{bao2024fastdetectgptefficientzeroshotdetection}
+Guangsheng Bao, Yanbin Zhao, Zhiyang Teng, Linyi Yang, and Yue Zhang. 2024.
+\newblock \href {https://arxiv.org/abs/2310.05130} {Fast-detectgpt: Efficient zero-shot detection of machine-generated text via conditional probability curvature}.
+\newblock \emph{Preprint}, arXiv:2310.05130.
+
+\bibitem[{Guo et~al.(2022)Guo, Lu, Duan, Wang, Zhou, and Yin}]{guo2022unixcoderunifiedcrossmodalpretraining}
+Daya Guo, Shuai Lu, Nan Duan, Yanlin Wang, Ming Zhou, and Jian Yin. 2022.
+\newblock \href {https://arxiv.org/abs/2203.03850} {Unixcoder: Unified cross-modal pre-training for code representation}.
+\newblock \emph{Preprint}, arXiv:2203.03850.
+
+\bibitem[{Lin et~al.(2018)Lin, Goyal, Girshick, He, and Dollár}]{lin2018focallossdenseobject}
+Tsung-Yi Lin, Priya Goyal, Ross Girshick, Kaiming He, and Piotr Dollár. 2018.
+\newblock \href {https://arxiv.org/abs/1708.02002} {Focal loss for dense object detection}.
+\newblock \emph{Preprint}, arXiv:1708.02002.
+
+\bibitem[{Mitchell et~al.(2023)Mitchell, Lee, Khazatsky, Manning, and Finn}]{mitchell2023detectgptzeroshotmachinegeneratedtext}
+Eric Mitchell, Yoonho Lee, Alexander Khazatsky, Christopher~D. Manning, and Chelsea Finn. 2023.
+\newblock \href {https://arxiv.org/abs/2301.11305} {Detectgpt: Zero-shot machine-generated text detection using probability curvature}.
+\newblock \emph{Preprint}, arXiv:2301.11305.
+
+\bibitem[{Orel et~al.(2025{\natexlab{a}})Orel, Azizov, and Nakov}]{orel-etal-2025-codet}
+Daniil Orel, Dilshod Azizov, and Preslav Nakov. 2025{\natexlab{a}}.
+\newblock \href {https://aclanthology.org/2025.findings-acl.550/} {{C}o{D}et-m4: Detecting machine-generated code in multi-lingual, multi-generator and multi-domain settings}.
+\newblock In \emph{Findings of the Association for Computational Linguistics: ACL 2025}, pages 10570--10593, Vienna, Austria. Association for Computational Linguistics.
+
+\bibitem[{Orel et~al.(2025{\natexlab{b}})Orel, Paul, Gurevych, and Nakov}]{orel2025textttdroidresourcesuiteaigenerated}
+Daniil Orel, Indraneil Paul, Iryna Gurevych, and Preslav Nakov. 2025{\natexlab{b}}.
+\newblock \href {https://arxiv.org/abs/2507.10583} {$\texttt{Droid}$: A resource suite for ai-generated code detection}.
+\newblock \emph{Preprint}, arXiv:2507.10583.
+
+\end{thebibliography}
